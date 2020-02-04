@@ -1,7 +1,7 @@
 COMMONFLAGS=-mz80
 CFLAGS=$(COMMONFLAGS) --opt-code-size --disable-warning 126 --disable-warning 110
 INTDIR=./build
-OUTDIR=./lib
+OUTDIR=../lib
 SRCDIR=.
 SDCCDIR=/opt/sdcc
 SDCC=$(SDCCDIR)/bin/sdcc
@@ -19,7 +19,7 @@ all: $(OUTDIR)/$(PROJNAME).lib
 # Clean
 clean:
 	@rm -rf $(INTDIR)
-	@rm -rf $(OUTDIR)
+	@rm -rf $(OUTDIR)/$(PROJNAME).lib
 
 # Rebuild
 rebuild: clean all

@@ -1,0 +1,3 @@
+#define UART_TX_PORT 0x80
+#define UART_RX_PORT 0x81
+#define UART_TX_STATUS_PORT 0x82
