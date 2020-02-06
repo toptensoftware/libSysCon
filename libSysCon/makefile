@@ -6,33 +6,40 @@ OUTDIR=../lib
 
 SDCCDIR=/opt/sdcc
 SDCC=$(SDCCDIR)/bin/sdcc
+SDAR=$(SDCCDIR)/bin/sdar
 SDASZ80=$(SDCCDIR)/bin/sdasz80
 HEX2BIN=../../tools/hex2bin
 YAZD=yazd
 
 PROJNAME := libSysCon
-SOURCES  := 
-INCLUDES := 
+SOURCES  := $(wildcard *.c)
+INCLUDES := $(wildcard *.h)
 PROJOBJS := $(SOURCES:%.c=$(INTDIR)/%.rel)
-OBJECTS  := $(INTDIR)/crt0.rel $(PROJOBJS)
+INCLUDEPATH := ../libFatFS
 
-all: $(OUTDIR)/crt0.rel
+all: $(OUTDIR)/crt0.rel $(OUTDIR)/$(PROJNAME).lib
+
+# Build lib
+$(OUTDIR)/$(PROJNAME).lib: $(PROJOBJS)	
+	@echo Creating library $(notdir $@)...
+	@mkdir -p $(OUTDIR)
+	@rm -f $@
+	@$(SDAR) -rc $@ $(PROJOBJS)
 
 # Compile
 $(PROJOBJS): $(INTDIR)/%.rel : ./%.c $(INCLUDES)
-	$(SDCC) $(CFLAGS) -c $< -o $@
+	@echo Compiling $(notdir $<)...
+	@mkdir -p $(INTDIR)
+	@$(SDCC) $(CFLAGS) $(addprefix -I ,$(INCLUDEPATH)) -c $< -o $@
 
-# Runtime start
+# Runtime start 
 $(OUTDIR)/crt0.rel: crt0.s
-	$(SDASZ80) -l -o $@ $<
-
-# Directories
-$(INTDIR):
-	mkdir -p $(INTDIR)
+	@mkdir -p $(OUTDIR)
+	@$(SDASZ80) -l -o $@ $<
 
 # Clean
 clean:
-	rm -f $(OUTDIR)/$(PROJNAME).*
-	rm -f $(OUTDIR)/crt0.rel
-	rm -rf $(INTDIR)
+	@rm -f $(OUTDIR)/$(PROJNAME).*
+	@rm -f $(OUTDIR)/crt0.rel
+	@rm -rf $(INTDIR)
 

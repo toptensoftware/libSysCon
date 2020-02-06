@@ -27,17 +27,13 @@ rebuild: clean all
 # Compile
 $(OBJS): $(INTDIR)/%.rel : $(SRCDIR)/%.c $(INCLUDES)
 	@echo Compiling $(notdir $<)...
-	$(SDCC) $(CFLAGS) $(FFOPTS) -c $< -o $@
+	@mkdir -p $(INTDIR)
+	@$(SDCC) $(CFLAGS) $(FFOPTS) -c $< -o $@
 
 # Link
-$(OUTDIR)/$(PROJNAME).lib: $(INTDIR) $(OUTDIR) $(OBJS) 
+$(OUTDIR)/$(PROJNAME).lib:  $(OBJS) 
 	@echo Creating library $(notdir $@)...
 	@rm -f $@
+	@mkdir -p $(OUTDIR)
 	@$(SDAR) -rc $@ $(OBJS)
 
-# Directories
-$(INTDIR):
-	@mkdir -p $(INTDIR)
-
-$(OUTDIR):
-	@mkdir -p $(OUTDIR)
