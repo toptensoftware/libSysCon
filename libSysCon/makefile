@@ -4,10 +4,17 @@ LINKFLAGS=$(COMMONFLAGS) --code-loc 0x110 --data-loc 0xF400 --no-std-crt0
 INTDIR=./build
 OUTDIR=../lib
 
+ifeq ($(OS),Windows_NT)
+SDCC=sdcc
+SDAR=sdar
+SDASZ80=sdasz80
+else
 SDCCDIR=/opt/sdcc
 SDCC=$(SDCCDIR)/bin/sdcc
 SDAR=$(SDCCDIR)/bin/sdar
 SDASZ80=$(SDCCDIR)/bin/sdasz80
+endif
+
 HEX2BIN=../../tools/hex2bin
 YAZD=yazd
 

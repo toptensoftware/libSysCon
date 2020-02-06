@@ -1,15 +1,20 @@
 COMMONFLAGS=-mz80
 CFLAGS=$(COMMONFLAGS) --opt-code-size --disable-warning 126 --disable-warning 110
-INTDIR=./build
+INTDIR=build
 OUTDIR=../lib
 SRCDIR=.
+ifeq ($(OS),Windows_NT)
+SDCC=sdcc
+SDAR=sdar
+else
 SDCCDIR=/opt/sdcc
 SDCC=$(SDCCDIR)/bin/sdcc
 SDAR=$(SDCCDIR)/bin/sdar
+endif
 
 PROJNAME := libFatFS
-SOURCES  := $(SRCDIR)/ff.c
-INCLUDES := $(SRCDIR)/ff.h
+SOURCES  := ff.c
+INCLUDES := ff.h
 OBJS  	 := $(SOURCES:%.c=$(INTDIR)/%.rel)
 
 
@@ -35,5 +40,6 @@ $(OUTDIR)/$(PROJNAME).lib:  $(OBJS)
 	@echo Creating library $(notdir $@)...
 	@rm -f $@
 	@mkdir -p $(OUTDIR)
-	@$(SDAR) -rc $@ $(OBJS)
+	$(SDAR) -rc temp build\ff.rel
+	mv temp $@
 

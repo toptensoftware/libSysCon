@@ -3,9 +3,14 @@ CFLAGS=$(COMMONFLAGS) --opt-code-size --disable-warning 126 --disable-warning 11
 INTDIR=./build
 OUTDIR=../lib
 SRCDIR=.
+ifeq ($(OS),Windows_NT)
+SDCC=sdcc
+SDAR=sdar
+else
 SDCCDIR=/opt/sdcc
 SDCC=$(SDCCDIR)/bin/sdcc
 SDAR=$(SDCCDIR)/bin/sdar
+endif
 
 PROJNAME := libFatFSBoot
 SOURCES  := $(SRCDIR)/ff.c
