@@ -47,7 +47,6 @@ void uart_write_sz(const char* psz);
 // UART Read
 uint8_t uart_read(void* ptr, uint8_t length);
 
-
 // ------------------------- SD Card -------------------------
 
 #define SD_PORT_SET_BLOCK_NUMBER    0x90        // Write-only, 32-bits, LSB first
