@@ -13,8 +13,8 @@ SDAR=$(SDCCDIR)/bin/sdar
 endif
 
 PROJNAME := libFatFS
-SOURCES  := ff.c
-INCLUDES := ff.h
+SOURCES  := $(wildcard *.c)
+INCLUDES := ff.h ffpriv.h ffconf.h
 OBJS  	 := $(SOURCES:%.c=$(INTDIR)/%.rel)
 
 
@@ -40,6 +40,6 @@ $(OUTDIR)/$(PROJNAME).lib:  $(OBJS)
 	@echo Creating library $(notdir $@)...
 	@rm -f $@
 	@mkdir -p $(OUTDIR)
-	$(SDAR) -rc temp build\ff.rel
-	mv temp $@
+	@$(SDAR) -rc $@ $(OBJS)
+	@echo Finished.
 
