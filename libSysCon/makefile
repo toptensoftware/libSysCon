@@ -10,7 +10,7 @@ SDAR=sdar
 SDASZ80=sdasz80
 else
 SDCCDIR=/opt/sdcc
-SDCC=$(SDCCDIR)/bin/sdcc
+SDCC=sdcc-filter $(SDCCDIR)/bin/sdcc
 SDAR=$(SDCCDIR)/bin/sdar
 SDASZ80=$(SDCCDIR)/bin/sdasz80
 endif

@@ -12,7 +12,7 @@ __asm
 	ld  h, 5 (iy)
 	ld  b, 6 (iy)
 	ld	c, #UART_RX_DATA_PORT
-	inir
+	inir 
 	pop iy
 	ret
 __endasm;
