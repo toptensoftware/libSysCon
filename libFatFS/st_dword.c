@@ -27,8 +27,10 @@
 /*-----------------------------------------------------------------------*/
 
 #if !FF_FS_READONLY
-void st_word (BYTE* ptr, WORD val)	/* Store a 2-byte word in little-endian */
+void st_dword (BYTE* ptr, DWORD val)	/* Store a 4-byte word in little-endian */
 {
+	*ptr++ = (BYTE)val; val >>= 8;
+	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val;
 }

@@ -54,11 +54,12 @@ uint8_t uart_read(void* ptr, uint8_t length);
 #define SD_PORT_COMMAND             0x91        // Write to invoke command
 #define SD_PORT_DATA                0x92        // Read-Write
 
-#define SD_STATUS_BUSY			    0x80 	    // Disk controller is busy
-#define SD_STATUS_INITIALIZED	    0x40        // Disk controller has initialized
-#define SD_STATUS_WRITING           0x04        // Disk controller is busy writing
+#define SD_STATUS_BUSY			    0x01 	    // Disk controller is busy
 #define SD_STATUS_READING           0x02        // Dick controller is busy reading
-#define SD_STATUS_ERROR			    0x01        // Disk controller has an DISK_STATUS_BIT_ERROR
+#define SD_STATUS_WRITING           0x04        // Disk controller is busy writing
+#define SD_STATUS_ERROR			    0x08        // Disk controller has an DISK_STATUS_BIT_ERROR
+#define SD_STATUS_INIT      	    0x40        // Disk controller has initialized
+#define SD_STATUS_SDHC			    0x80 	    // Disk controller is busy
 
 #define SD_COMMAND_NOP              0           // Null op (resets the buffer pointer to 0)
 #define SD_COMMAND_READ			    1           // Start a read operation
