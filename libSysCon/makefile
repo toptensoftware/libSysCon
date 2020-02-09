@@ -41,6 +41,7 @@ $(PROJOBJS): $(INTDIR)/%.rel : ./%.c $(INCLUDES)
 
 # Runtime start 
 $(OUTDIR)/crt0.rel: crt0.s
+	@echo Assembling $(notdir $<)...
 	@mkdir -p $(OUTDIR)
 	@$(SDASZ80) -l -o $@ $<
 

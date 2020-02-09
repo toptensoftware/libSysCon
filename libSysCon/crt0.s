@@ -52,6 +52,10 @@
 	.org	0x38
 	reti
 
+	; NMI handler
+	.org	0x66
+	reti
+
 	.org	0x100
 
 init:
@@ -64,7 +68,7 @@ init:
 	djnz	1$
 
 	;; Set stack pointer
-	ld	sp,#0xFF00
+	ld	sp,#0x8000
 
 	;; Initialise global variables
 	call	gsinit

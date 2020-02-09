@@ -13,6 +13,46 @@
 extern void (*yield)();
 
 
+// ------------------------- Address Page Mapping -------------------------
+
+
+// Address page mapping ports
+#define APM_LOBANK_PAGE_PORT     0xA0
+#define APM_HIBANK_PAGE_PORT     0xA1
+#define APM_SYSCON_ENABLE_PORT   0xA2
+
+// Sets the low bits (16 downto 15) of the external RAM address for
+// Z80 addresses in the low bank range (0x0000 - 0x7fff)
+__sfr __at APM_LOBANK_PAGE_PORT ApmLoBankPage;
+
+// Sets the high bits (16 downto 15) of the external RAM address for
+// Z80 addresses in the low bank range (0x0000 - 0x7fff)
+__sfr __at APM_HIBANK_PAGE_PORT ApmHiBankPage;
+
+// Enables/disables other entries in the memory map (see SYSCON_ENABLE_* flags)
+__sfr __at APM_SYSCON_ENABLE_PORT ApmSysConEnable;
+
+
+// Bit flags for ApmSysConEnable
+#define SYSCON_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
+#define SYSCON_ENABLE_FIRMWARE   0x02           // 0x0000 -> 0x6FFF
+
+
+// ------------------------- Interrupt Controller -------------------------
+
+#define INTERRUPT_CONTROLLER_PORT    0x1c
+
+__sfr __at INTERRUPT_CONTROLLER_PORT InterruptControllerPort;
+
+// Write these to the interrupt controller port
+#define ICFLAG_EXIT_HIJACK_MODE     0x01
+#define ICFLAG_SOFT_RESET           0x02
+
+// Reading from the interrupt controller port returns a bit mask
+// of the raised interrupts.
+
+
+
 // ------------------------- Serial Port -------------------------
 
 // UART Port Numbers
@@ -76,6 +116,16 @@ __sfr __at SD_PORT_COMMAND SdCommandPort;
 
 // Read/write this port to drain/fill the SD card buffer
 __sfr __at SD_PORT_DATA SdDataPort;
+
+void sd_set_block_number(uint32_t blockNumber);
+
+void sd_read_command(uint32_t blockNumber);
+void sd_read_data(void* ptr);
+void sd_read(uint32_t block_number, void* ptr);
+
+void sd_write_command(uint32_t blockNumber);
+void sd_write_data(void* ptr);
+void sd_write(uint32_t block_number, void* ptr);
 
 
 #endif      // _LIBSYSCON_H

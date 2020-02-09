@@ -57,75 +57,84 @@ Hexadecimal [16-Bits]
    0038                      52 	.org	0x38
    0038 ED 4D         [14]   53 	reti
                              54 
-   0100                      55 	.org	0x100
+                             55 	; NMI handler
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 2.
 Hexadecimal [16-Bits]
 
 
 
-                             56 
-   0100                      57 init:
+   0066                      56 	.org	0x66
+   0066 ED 4D         [14]   57 	reti
                              58 
-                             59 
-                             60 	; Small delay.  Not sure why, but helps boot work after
-                             61 	; FPGA direct programming
-   0100 06 40         [ 7]   62 	ld      B,#0x40
-   0102                      63 1$:
-   0102 10 FE         [13]   64 	djnz	1$
-                             65 
-                             66 	;; Set stack pointer
-   0104 31 00 FF      [10]   67 	ld	sp,#0xFF00
-                             68 
-                             69 	;; Initialise global variables
-   0107 CD 00 00      [17]   70 	call	gsinit
-                             71 
-                             72 	;; Go...
-   010A CD 00 00      [17]   73 	call	_main
-                             74 
-                             75 	;; Should never get here
-   010D                      76 2$:
-   010D 18 FE         [12]   77 	jr 		2$
+   0100                      59 	.org	0x100
+                             60 
+   0100                      61 init:
+                             62 
+                             63 
+                             64 	; Small delay.  Not sure why, but helps boot work after
+                             65 	; FPGA direct programming
+   0100 06 40         [ 7]   66 	ld      B,#0x40
+   0102                      67 1$:
+   0102 10 FE         [13]   68 	djnz	1$
+                             69 
+                             70 	;; Set stack pointer
+   0104 31 00 80      [10]   71 	ld	sp,#0x8000
+                             72 
+                             73 	;; Initialise global variables
+   0107 CD 00 00      [17]   74 	call	gsinit
+                             75 
+                             76 	;; Go...
+   010A CD 00 00      [17]   77 	call	_main
                              78 
-                             79 	;; Ordering of segments for the linker.
-                             80 	.area	_HOME
-                             81 	.area	_CODE
-                             82 	.area	_INITIALIZER
-                             83 	.area   _GSINIT
-                             84 	.area   _GSFINAL
-                             85 
-                             86 	.area	_DATA
-                             87 	.area	_INITIALIZED
-                             88 	.area	_BSEG
-                             89 	.area   _BSS
-                             90 	.area   _HEAP
-                             91 
-                             92 	.area   _CODE
-                             93 
-                             94 	.area   _GSINIT
-   0000                      95 gsinit::
-   0000 01 00 00      [10]   96 	ld	bc, #l__INITIALIZER
-   0003 78            [ 4]   97 	ld	a, b
-   0004 B1            [ 4]   98 	or	a, c
-   0005 28 08         [12]   99 	jr	Z, gsinit_next
-   0007 11 00 00      [10]  100 	ld	de, #s__INITIALIZED
-   000A 21 00 00      [10]  101 	ld	hl, #s__INITIALIZER
-   000D ED B0         [21]  102 	ldir
-   000F                     103 gsinit_next:
-                            104 
-                            105 	.area   _GSFINAL
-   0000 C9            [10]  106 	ret
-                            107 
+                             79 	;; Should never get here
+   010D                      80 2$:
+   010D 18 FE         [12]   81 	jr 		2$
+                             82 
+                             83 	;; Ordering of segments for the linker.
+                             84 	.area	_HOME
+                             85 	.area	_CODE
+                             86 	.area	_INITIALIZER
+                             87 	.area   _GSINIT
+                             88 	.area   _GSFINAL
+                             89 
+                             90 	.area	_DATA
+                             91 	.area	_INITIALIZED
+                             92 	.area	_BSEG
+                             93 	.area   _BSS
+                             94 	.area   _HEAP
+                             95 
+                             96 	.area   _CODE
+                             97 
+                             98 	.area   _GSINIT
+   0000                      99 gsinit::
+   0000 01 00 00      [10]  100 	ld	bc, #l__INITIALIZER
+   0003 78            [ 4]  101 	ld	a, b
+   0004 B1            [ 4]  102 	or	a, c
+   0005 28 08         [12]  103 	jr	Z, gsinit_next
+   0007 11 00 00      [10]  104 	ld	de, #s__INITIALIZED
+   000A 21 00 00      [10]  105 	ld	hl, #s__INITIALIZER
+   000D ED B0         [21]  106 	ldir
+   000F                     107 gsinit_next:
+                            108 
+                            109 	.area   _GSFINAL
+   0000 C9            [10]  110 	ret
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 3.
+Hexadecimal [16-Bits]
+
+
+
+                            111 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 4.
 Hexadecimal [16-Bits]
 
 Symbol Table
 
     .__.$$$.=  2710 L   |     .__.ABS.=  0000 G   |     .__.CPU.=  0000 L
-    .__.H$L.=  0000 L   |     _main      **** GX  |   D gsinit     0000 GR
-  D gsinit_n   000F R   |   A init       0100 R   |     l__INITI   **** GX
+    .__.H$L.=  0000 L   |     _main      **** GX  |   E gsinit     0000 GR
+  E gsinit_n   000F R   |   B init       0100 R   |     l__INITI   **** GX
     s__INITI   **** GX  |     s__INITI   **** GX
 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 4.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 5.
 Hexadecimal [16-Bits]
 
 Area Table
@@ -140,14 +149,15 @@ Area Table
    7 _HEADER5   size    2   flags    8
    8 _HEADER6   size    2   flags    8
    9 _HEADER7   size    2   flags    8
-   A _HEADER8   size    F   flags    8
-   B _HOME      size    0   flags    0
-   C _INITIAL   size    0   flags    0
-   D _GSINIT    size    F   flags    0
-   E _GSFINAL   size    1   flags    0
-   F _DATA      size    0   flags    0
-  10 _INITIAL   size    0   flags    0
-  11 _BSEG      size    0   flags    0
-  12 _BSS       size    0   flags    0
-  13 _HEAP      size    0   flags    0
+   A _HEADER8   size    2   flags    8
+   B _HEADER9   size    F   flags    8
+   C _HOME      size    0   flags    0
+   D _INITIAL   size    0   flags    0
+   E _GSINIT    size    F   flags    0
+   F _GSFINAL   size    1   flags    0
+  10 _DATA      size    0   flags    0
+  11 _INITIAL   size    0   flags    0
+  12 _BSEG      size    0   flags    0
+  13 _BSS       size    0   flags    0
+  14 _HEAP      size    0   flags    0
 

@@ -21,11 +21,11 @@ port
 
 	-- CPU connection
 	i_cpu_port_number : in std_logic_vector(2 downto 0);
-	i_cpu_port_wr_pulse : in std_logic;
-	i_cpu_port_rd : in std_logic;
+	i_cpu_port_wr_rising_edge : in std_logic;
 	i_cpu_port_rd_falling_edge : in std_logic;
 	o_cpu_din : out std_logic_vector(7 downto 0);
 	i_cpu_dout : in std_logic_vector(7 downto 0);
+	o_irq : out std_logic;
 
 	-- SD Card Controller Connection
 	i_sd_status : in std_logic_vector(7 downto 0);
@@ -72,8 +72,10 @@ begin
 	o_cpu_din <= s_cpu_ram_dout when i_cpu_port_number = "010" else i_sd_status;
 
 	-- RAM Write from CPU?
-	s_cpu_ram_write <= i_cpu_port_wr_pulse when i_cpu_port_number = "010" else '0';
+	s_cpu_ram_write <= i_cpu_port_wr_rising_edge when i_cpu_port_number = "010" else '0';
 
+	-- Generate IRQ whenever idle
+	o_irq <= not i_sd_status(0);
 
 	-- Handle block number writes
 	load_block_number : process(i_clock)
@@ -83,7 +85,7 @@ begin
 				s_sd_op_block_number <= x"00000000";
 			else
 				-- Write to port 0x90 shifts in block number
-				if i_cpu_port_wr_pulse = '1' and i_cpu_port_number = "000" then
+				if i_cpu_port_wr_rising_edge = '1' and i_cpu_port_number = "000" then
 					s_sd_op_block_number <= i_cpu_dout & s_sd_op_block_number(31 downto 8);
 				end if;
 			end if;
@@ -106,7 +108,7 @@ begin
 				o_sd_op_write <= '0';
 
 				-- Start a new command (write to port 0x91)
-				if i_cpu_port_wr_pulse = '1' and i_cpu_port_number = "001" and i_sd_status(0) = '0' then
+				if i_cpu_port_wr_rising_edge = '1' and i_cpu_port_number = "001" and i_sd_status(0) = '0' then
 					o_sd_op_write <= '1';
 					o_sd_op_cmd <= i_cpu_dout(1 downto 0);
 					s_cpu_ram_addr <= (others => '0');
@@ -114,7 +116,7 @@ begin
 
 
 				-- Write data (0x92)
-				if i_cpu_port_wr_pulse = '1' and i_cpu_port_number = "010" then
+				if i_cpu_port_wr_rising_edge = '1' and i_cpu_port_number = "010" then
 					s_cpu_ram_addr <= std_logic_vector(unsigned(s_cpu_ram_addr) + 1);
 				end if;
 
