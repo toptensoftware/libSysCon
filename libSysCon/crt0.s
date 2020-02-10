@@ -31,6 +31,7 @@
 	.globl    l__INITIALIZER
     .globl    s__INITIALIZER
     .globl    s__INITIALIZED
+    .globl  _nmi_handler
 
 	.area	_HEADER (ABS)
 	;; Reset vector
@@ -54,7 +55,7 @@
 
 	; NMI handler
 	.org	0x66
-	reti
+	jp		_nmi_handler	
 
 	.org	0x100
 
