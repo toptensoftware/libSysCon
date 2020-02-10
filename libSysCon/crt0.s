@@ -28,6 +28,8 @@
 
 	.module crt0
 	.globl	_main
+	.globl    s__DATA
+	.globl    l__DATA
 	.globl    l__INITIALIZER
     .globl    s__INITIALIZER
     .globl    s__INITIALIZED
@@ -98,13 +100,26 @@ init:
 
 	.area   _GSINIT
 gsinit::
+	ld  hl, #s__DATA
+	xor a
+	ld  (hl),a
+	ld  bc, #(l__DATA - 1)
+	ld  a,b
+	or  a,c
+	jr  z, gsinit_1
+	ld  de, #(s__DATA + 1)
+	ldir
+
+gsinit_1::
 	ld	bc, #l__INITIALIZER
-	ld	a, b
-	or	a, c
-	jr	Z, gsinit_next
+	ld  a,b
+	or  a,c
+	jr  z, gsinit_next
 	ld	de, #s__INITIALIZED
 	ld	hl, #s__INITIALIZER
 	ldir
+
+
 gsinit_next:
 
 	.area   _GSFINAL
