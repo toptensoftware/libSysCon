@@ -12,26 +12,32 @@
 // booted and running yet.
 extern void (*yield)();
 
+// Implemented in nmi.c
+void YieldNmiProc();
+
 
 // ------------------------- Address Page Mapping -------------------------
 
 
 // Address page mapping ports
-#define APM_HIBANK_PAGE_PORT     0xA1
-#define APM_SYSCON_ENABLE_PORT   0xA2
+#define APM_PAGEBANK_PORT     0xA1
+#define APM_ENABLE_PORT       0xA2
 
-// Sets the high bits (16 downto 15) of the external RAM address for
-// Z80 addresses in the hi bank range (0x8000 - 0xffff)
-__sfr __at APM_HIBANK_PAGE_PORT ApmHiBankPage;
+// Sets the upper bits that addresses 0xFC00 -> 0xFFFF map to
+// Actual ram address will be (ApmPageBank << 10) | address (& 0x3ff)
+__sfr __at APM_PAGEBANK_PORT ApmPageBank;
 
 // Enables/disables other entries in the memory map (see SYSCON_ENABLE_* flags)
-__sfr __at APM_SYSCON_ENABLE_PORT ApmSysConEnable;
+__sfr __at APM_ENABLE_PORT ApmEnable;
 
 
 // Bit flags for ApmSysConEnable
-#define SYSCON_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
-#define SYSCON_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
-                                                // (from 0x6000 -> 0x7FFF is writable)
+#define APM_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
+#define APM_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
+                                             // (from 0x6000 -> 0x7FFF is writable)
+#define APM_ENABLE_PAGEBANK   0x04           // Enable page banking from 0xFC00 -> 0xFFFF
+
+__at(0xFC00) char banked_page[0x400];
 
 
 // ------------------------- Interrupt Controller -------------------------
@@ -40,12 +46,12 @@ __sfr __at APM_SYSCON_ENABLE_PORT ApmSysConEnable;
 
 __sfr __at INTERRUPT_CONTROLLER_PORT InterruptControllerPort;
 
-// Write these to the interrupt controller port
-#define ICFLAG_EXIT_HIJACK_MODE     0x01
-#define ICFLAG_SOFT_RESET           0x02
-
 // Reading from the interrupt controller port returns a bit mask
 // of the raised interrupts.
+
+// Writing to the interrupt controller port indicates a request
+// to exit hijack mode.  The actual mode switch will happen on the 
+// next RET or JP (HL).
 
 
 

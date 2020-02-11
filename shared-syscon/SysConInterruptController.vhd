@@ -41,7 +41,6 @@ port
 	o_hijacked : out std_logic;
 	o_nmi_n : out std_logic;
 	o_is_ic_port : out std_logic;
-	o_soft_reset : out std_logic;
 	o_cpu_din : out std_logic_vector(7 downto 0)
 );
 end SysConInterruptController;
@@ -79,7 +78,6 @@ begin
 
 				s_hijacked <= '1';
 				s_exit_hijack_mode <= '0';
-				o_soft_reset <= '0';
 				s_prev_irqs <= (others => '1');
 
 			elsif i_clken = '1' then
@@ -92,8 +90,7 @@ begin
 
 					-- Handle writes to the interrupt controller port
 					if s_is_ic_port = '1' and i_cpu_port_wr='1' then
-						s_exit_hijack_mode <= i_cpu_dout(0);
-						o_soft_reset <= i_cpu_dout(1);
+						s_exit_hijack_mode <= '1';
 					end if;
 
 					-- Handle exiting hijack mode

@@ -41,5 +41,10 @@ uint8_t uart_read(void* ptr, uint8_t length)
 		length -= recv;
 	}
 
+	if (length == originalLength)
+	{
+		yield();
+	}
+
 	return originalLength - length;
 }

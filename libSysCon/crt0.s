@@ -34,6 +34,7 @@
     .globl    s__INITIALIZER
     .globl    s__INITIALIZED
     .globl  _nmi_handler
+	.globl  _top_of_stack
 
 	.area	_HEADER (ABS)
 	;; Reset vector
@@ -71,7 +72,7 @@ init:
 	djnz	1$
 
 	;; Set stack pointer
-	ld	sp,#0x8000
+	ld	sp,#_top_of_stack
 
 	;; Initialise global variables
 	call	gsinit
