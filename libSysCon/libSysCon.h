@@ -17,16 +17,11 @@ extern void (*yield)();
 
 
 // Address page mapping ports
-#define APM_LOBANK_PAGE_PORT     0xA0
 #define APM_HIBANK_PAGE_PORT     0xA1
 #define APM_SYSCON_ENABLE_PORT   0xA2
 
-// Sets the low bits (16 downto 15) of the external RAM address for
-// Z80 addresses in the low bank range (0x0000 - 0x7fff)
-__sfr __at APM_LOBANK_PAGE_PORT ApmLoBankPage;
-
 // Sets the high bits (16 downto 15) of the external RAM address for
-// Z80 addresses in the low bank range (0x0000 - 0x7fff)
+// Z80 addresses in the hi bank range (0x8000 - 0xffff)
 __sfr __at APM_HIBANK_PAGE_PORT ApmHiBankPage;
 
 // Enables/disables other entries in the memory map (see SYSCON_ENABLE_* flags)
@@ -35,7 +30,8 @@ __sfr __at APM_SYSCON_ENABLE_PORT ApmSysConEnable;
 
 // Bit flags for ApmSysConEnable
 #define SYSCON_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
-#define SYSCON_ENABLE_FIRMWARE   0x02           // 0x0000 -> 0x6FFF
+#define SYSCON_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
+                                                // (from 0x6000 -> 0x7FFF is writable)
 
 
 // ------------------------- Interrupt Controller -------------------------
