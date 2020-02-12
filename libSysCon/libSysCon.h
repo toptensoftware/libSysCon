@@ -3,6 +3,23 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
+
+
+// ------------------------- Linked Lists -------------------------
+
+typedef struct _LISTITEM
+{
+	struct _LISTITEM* pNext;
+} LISTITEM;
+
+
+void* ll_push(void** pHead, void* pItem);
+void* ll_pop(void** pHead);
+void* ll_shift(void** pHead);
+void* ll_unshift(void** pHead, void* pItem);
+void* ll_remove(void** pHead, void* pItem);
+bool ll_contains(void* pHead, void* pItem);
 
 
 // ------------------------- Scheduling -------------------------
