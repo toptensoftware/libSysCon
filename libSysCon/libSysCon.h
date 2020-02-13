@@ -60,7 +60,7 @@ FIBER* create_fiber(void (*fiberProc)(), int stack_size);
 
 // Signals
 void init_signal(SIGNAL* pSignal);
-void fire_signal(SIGNAL* pSignal);
+void set_signal(SIGNAL* pSignal);
 void wait_signal(SIGNAL* pSignal);
 
 // Mutexes

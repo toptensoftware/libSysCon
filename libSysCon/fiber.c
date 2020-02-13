@@ -147,7 +147,7 @@ void init_signal(SIGNAL* pSignal)
 }
 
 // Fire a signal
-void fire_signal(SIGNAL* pSignal)
+void set_signal(SIGNAL* pSignal)
 {
 	// Get the next fiber to activate
 	FIBER* pActivate = ll_shift(&pSignal->pWaitingFibers);
@@ -204,6 +204,6 @@ void leave_mutex(MUTEX* pMutex)
 	pMutex->pOwningFiber = NULL;
 	if (pMutex->signal.pWaitingFibers != NULL)
 	{
-		fire_signal(&pMutex->signal);
+		set_signal(&pMutex->signal);
 	}
 }

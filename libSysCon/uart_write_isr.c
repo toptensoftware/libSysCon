@@ -18,6 +18,6 @@ void uart_write_init_isr()
 void uart_write_isr()
 {
     if (InterruptControllerPort & 0x02)
-        fire_signal(&g_sig_uart_tx);
+        set_signal(&g_sig_uart_tx);
 }
 

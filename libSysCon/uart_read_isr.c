@@ -19,6 +19,6 @@ void uart_read_init_isr()
 void uart_read_isr()
 {
     if (InterruptControllerPort & 0x01)
-        fire_signal(&g_sig_uart_rx);
+        set_signal(&g_sig_uart_rx);
 }
 
