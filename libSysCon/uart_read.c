@@ -1,6 +1,9 @@
 #include "libSysCon.h"
 #include <string.h>
 
+void (*uart_read_yield)() = yield_nop;
+
+
 void uart_read_unsafe(void* ptr, uint8_t length) __naked
 {
 	// Write data
@@ -41,9 +44,10 @@ uint8_t uart_read(void* ptr, uint8_t length)
 		length -= recv;
 	}
 
+	// If didn't read anything then yield
 	if (length == originalLength)
 	{
-		yield();
+		uart_read_yield();
 	}
 
 	return originalLength - length;

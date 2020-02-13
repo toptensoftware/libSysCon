@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 
+
 // ------------------------- Linked Lists -------------------------
 
 typedef struct _LISTITEM
@@ -22,19 +23,54 @@ void* ll_remove(void** pHead, void* pItem);
 bool ll_contains(void* pHead, void* pItem);
 
 
-// ------------------------- Scheduling -------------------------
 
-// Yield back to either the emulated machine, or perhaps
-// nowhere and immediately return - depending if emulated machine
-// booted and running yet.
-extern void (*yield)();
+// ------------------------- NMI handling -------------------------
 
-// Implemented in nmi.c
-void YieldNmiProc();
+// Call this to yield back from the NMI handler
+void yield_from_nmi();
+
+
+
+// ------------------------- Fibers -------------------------
+
+typedef struct _FIBER
+{
+    struct _FIBER* pNext;
+    void* sp;
+    bool sleeping;
+} FIBER;
+
+typedef struct _SIGNAL
+{
+    FIBER* pWaitingFibers;
+    bool set;
+} SIGNAL;
+
+typedef struct _MUTEX
+{
+    FIBER* pOwningFiber;
+    SIGNAL signal;
+} MUTEX;
+
+// Run all active fibers
+void run_fibers();
+
+// Create a new fiber with given proc and stack size
+FIBER* create_fiber(void (*fiberProc)(), int stack_size);
+
+// Signals
+void init_signal(SIGNAL* pSignal);
+void fire_signal(SIGNAL* pSignal);
+void wait_signal(SIGNAL* pSignal);
+
+// Mutexes
+void init_mutex(MUTEX* pMutex);
+void enter_mutex(MUTEX* pMutex);
+void leave_mutex(MUTEX* pMutex);
+
 
 
 // ------------------------- Address Page Mapping -------------------------
-
 
 // Address page mapping ports
 #define APM_PAGEBANK_PORT     0xA1
@@ -47,7 +83,6 @@ __sfr __at APM_PAGEBANK_PORT ApmPageBank;
 // Enables/disables other entries in the memory map (see SYSCON_ENABLE_* flags)
 __sfr __at APM_ENABLE_PORT ApmEnable;
 
-
 // Bit flags for ApmSysConEnable
 #define APM_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
 #define APM_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
@@ -55,6 +90,7 @@ __sfr __at APM_ENABLE_PORT ApmEnable;
 #define APM_ENABLE_PAGEBANK   0x04           // Enable page banking from 0xFC00 -> 0xFFFF
 
 __at(0xFC00) char banked_page[0x400];
+
 
 
 // ------------------------- Interrupt Controller -------------------------
@@ -106,6 +142,18 @@ void uart_write_sz(const char* psz);
 // UART Read
 uint8_t uart_read(void* ptr, uint8_t length);
 
+
+extern void (*uart_read_yield)();
+extern void (*uart_write_yield)();
+
+// UART ISR
+void uart_read_init_isr();
+void uart_read_isr();
+void uart_write_init_isr();
+void uart_write_isr();
+
+
+
 // ------------------------- SD Card -------------------------
 
 #define SD_PORT_SET_BLOCK_NUMBER    0x90        // Write-only, 32-bits, LSB first
@@ -145,6 +193,14 @@ void sd_read(uint32_t block_number, void* ptr);
 void sd_write_command(uint32_t blockNumber);
 void sd_write_data(void* ptr);
 void sd_write(uint32_t block_number, void* ptr);
+
+extern void (*sd_yield)();
+
+
+
+// ------------------------- No-op Yield -------------------------
+
+void yield_nop();
 
 
 #endif      // _LIBSYSCON_H

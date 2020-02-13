@@ -11,7 +11,7 @@ void sd_read_command(uint32_t blockNumber)
 
 	// Wait for it
 	while (SdStatusPort & SD_STATUS_BUSY)
-		yield();
+		sd_yield();
 }
 
 void sd_read_data(void* ptr) __naked

@@ -6,13 +6,7 @@
 void* g_ExtSP;
 void* g_ExtRegs[6];
 void* g_SysConSP;
-void* g_SysConRegs[6];
 bool g_bFirstYield = true;
-
-void processInterrupts()
-{
-}
-
 
 
 // NMI handler
@@ -34,27 +28,16 @@ __asm
 	ld		SP,(_g_SysConSP)
 	pop		IY
 	pop		IX
-	pop		HL
-	pop		DE
-	pop		BC
-	pop		AF
 
 __endasm;
-
-    // Process interrrupts
-	processInterrupts();
 }
 
 
 
-void YieldNmiProc()
+void yield_from_nmi()
 {
 __asm
 	; Save SysCon state
-	push	AF
-	push	BC
-	push	DE
-	push	HL
 	push	IX
 	push	IY
 	ld		(_g_SysConSP),SP

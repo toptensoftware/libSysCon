@@ -1,6 +1,9 @@
 #include "libSysCon.h"
 #include <string.h>
 
+void (*uart_write_yield)() = yield_nop;
+
+
 void uart_write_unsafe(void* ptr, uint8_t length) __naked
 {
 	// Write data
@@ -29,7 +32,7 @@ void uart_write(void* ptr, uint8_t length)
 		// Yield if can't send anything
 		if (send == 0)
 		{
-			yield();
+			uart_write_yield();
 			continue;
 		}
 
