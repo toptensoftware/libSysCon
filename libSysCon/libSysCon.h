@@ -139,8 +139,13 @@ __sfr __at UART_RX_DATA_PORT UartRxDataPort;
 void uart_write(void* ptr, uint8_t length);
 void uart_write_sz(const char* psz);
 
-// UART Read
+// UART Read.  Will block until something received
+// but may return with a partially filled buffer
 uint8_t uart_read(void* ptr, uint8_t length);
+
+// Same as above but doesn't return until length bytes
+// received.
+uint8_t uart_read_wait(void* ptr, uint8_t length);
 
 
 extern void (*uart_read_yield)();

@@ -52,3 +52,15 @@ uint8_t uart_read(void* ptr, uint8_t length)
 
 	return originalLength - length;
 }
+
+uint8_t uart_read_wait(void* ptr, uint8_t length)
+{
+	char* p = (char*)ptr;
+	char* pEnd = p + length;
+	while (p < pEnd)
+	{
+		uint8_t r = uart_read(p, pEnd - p);
+		p += r;
+	}
+	return length;
+}
