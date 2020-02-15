@@ -88,6 +88,7 @@ __sfr __at APM_ENABLE_PORT ApmEnable;
 #define APM_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
                                              // (from 0x6000 -> 0x7FFF is writable)
 #define APM_ENABLE_PAGEBANK   0x04           // Enable page banking from 0xFC00 -> 0xFFFF
+#define APM_ENABLE_RESET      0x80           // Write this to ApmEnable to reset the machine
 
 __at(0xFC00) char banked_page[0x400];
 
