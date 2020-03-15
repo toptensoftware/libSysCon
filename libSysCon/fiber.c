@@ -4,9 +4,6 @@
 // Linked list of current active fibers
 FIBER* g_pActiveFibers = NULL;
 
-// Linked list of sleeping fibers
-FIBER* g_pSleepingFibers = NULL;
-
 // The currently executing fiber
 FIBER* g_pCurrentFiber = NULL;
 
@@ -115,33 +112,9 @@ void wake_fiber(FIBER* pFiber)
 {
 	if (pFiber->sleeping)
 	{
-		ll_remove(&g_pSleepingFibers, pFiber);
 		ll_push(&g_pActiveFibers, pFiber);
 		pFiber->sleeping = false;
 	}
-}
-
-// Sleep the current fiber
-void sleep_fiber()
-{
-	// Sleep the current fiber
-	ll_remove(&g_pActiveFibers, g_pCurrentFiber);
-	ll_push(&g_pSleepingFibers, g_pCurrentFiber);
-	g_pCurrentFiber->sleeping = true;
-
-	// Save fiber context
-	__asm
-	push IX
-	push IY
-	ld	hl,#0
-	add hl,sp
-	ld ix,(_g_pCurrentFiber)
-	ld 2 (ix),l
-	ld 3 (ix),h
-	__endasm;
-
-	// Run the next fiber (or exit fiber processing)
-	run_next_fiber();
 }
 
 // Initialize a signal
@@ -166,6 +139,23 @@ void set_signal(SIGNAL* pSignal)
 	}
 }
 
+void sleep_fiber() __naked
+{
+	// Save fiber context
+	__asm
+	push IX
+	push IY
+	ld	hl,#0
+	add hl,sp
+	ld ix,(_g_pCurrentFiber)
+	ld 2 (ix),l
+	ld 3 (ix),h
+	__endasm;
+
+	// Run the next fiber (or exit fiber processing)
+	run_next_fiber();
+}
+
 // Wait for a signal to be set
 void wait_signal(SIGNAL* pSignal)
 {
@@ -176,10 +166,12 @@ void wait_signal(SIGNAL* pSignal)
 		return;
 	}
 
-	// Add self as a waiter
+	// Add current fiber as a waiter on this signal
+	g_pCurrentFiber->sleeping = true;
+	ll_remove(&g_pActiveFibers, g_pCurrentFiber);
 	ll_push(&pSignal->pWaitingFibers, g_pCurrentFiber);
 
-	// Sleep for now...
+	// Sleep the fiber
 	sleep_fiber();
 }
 
