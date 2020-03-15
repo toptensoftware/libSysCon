@@ -18,7 +18,7 @@ void uart_read_init_isr()
 // Check interrupt flags and fire appropriate signals
 void uart_read_isr()
 {
-    if (InterruptControllerPort & 0x01)
+    if (InterruptControllerPort & IRQ_UART_RX)
         set_signal(&g_sig_uart_rx);
 }
 

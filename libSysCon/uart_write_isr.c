@@ -17,7 +17,7 @@ void uart_write_init_isr()
 // Check interrupt flags and fire appropriate signals
 void uart_write_isr()
 {
-    if (InterruptControllerPort & 0x02)
+    if (InterruptControllerPort & IRQ_UART_TX)
         set_signal(&g_sig_uart_tx);
 }
 

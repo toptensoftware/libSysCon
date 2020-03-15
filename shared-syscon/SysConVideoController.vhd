@@ -21,17 +21,17 @@ port
     i_clken : in std_logic;
 
 	-- VGA connection
-	i_horz_pos : in STD_LOGIC_VECTOR(10 downto 0);
-	i_vert_pos : in STD_LOGIC_VECTOR(10 downto 0);
+	i_horz_pos : integer range -2048 to 2047;
+	i_vert_pos : integer range -2048 to 2047;
 	o_red: out STD_LOGIC_VECTOR(1 downto 0);
 	o_green: out STD_LOGIC_VECTOR(1 downto 0);
 	o_blue: out STD_LOGIC_VECTOR(1 downto 0);
 	o_transparent : out std_logic;
 
 	-- Video Controller
-	o_video_ram_addr : out STD_LOGIC_VECTOR(8 downto 0);
-	i_video_ram_char : in STD_LOGIC_VECTOR(7 downto 0);
-	i_video_ram_color : in STD_LOGIC_VECTOR(7 downto 0)
+	o_vram_addr : out STD_LOGIC_VECTOR(8 downto 0);
+	i_vram_char : in STD_LOGIC_VECTOR(7 downto 0);
+	i_vram_color : in STD_LOGIC_VECTOR(7 downto 0)
 );
 end SysConVideoController;
 
@@ -39,8 +39,10 @@ architecture Behavioral of SysConVideoController is
 	signal s_pixel_in_range : std_logic;
 	signal s_pixel : std_logic;
 	signal s_color_nibble : std_logic_vector(3 downto 0);
-	signal s_current_x_coord : std_logic_vector(10 downto 0);
-	signal s_upcoming_x_coord : std_logic_vector(10 downto 0);
+	signal s_current_x_coord_int : integer range -2048 to 2047;
+	signal s_upcoming_x_coord_int : integer range -2048 to 2047;
+	signal s_current_x_coord : std_logic_vector(9 downto 0);
+	signal s_upcoming_x_coord : std_logic_vector(9 downto 0);
 	signal s_current_char_column : std_logic_vector(6 downto 0);
 	signal s_current_char_row : std_logic_vector(6 downto 0);
 	signal s_upcoming_char_column : std_logic_vector(6 downto 0);
@@ -63,15 +65,15 @@ begin
 
 	process (i_clock)
 	begin
-		if (rising_edge(pixel_clock)) then
-			s_color_delayed <= i_video_ram_color;
+		if (rising_edge(i_clock)) then
+			s_color_delayed <= i_vram_color;
 		end if;
 	end process;
 
 	-- Count the vertical scan/character lines
 	process (i_clock)
 	begin
-		if rising_edge(pixel_clock) then
+		if rising_edge(i_clock) then
 			if i_reset='1' then
 
 				s_current_ypos_in_char <= (others=>'0');
@@ -80,9 +82,9 @@ begin
 			elsif i_clken = '1' then
 
 				-- Pick one s_pixel somewhere in the back porch to trigger line counter
-				if i_horz_pos = std_logic_vector(to_unsigned(VGA_TIMING_WIDTH-10, 11)) then
+				if i_horz_pos = -2 then
 
-					if unsigned(i_vert_pos) = 0 then					-- top
+					if i_vert_pos = 0 then					-- top
 
 						-- First s_pixel row
 						s_current_ypos_in_char <= (others=>'0');
@@ -108,8 +110,11 @@ begin
 
 
 	-- Calculate the current and upcoming microbee x coordinate
-	s_current_x_coord <= std_logic_vector(unsigned(i_horz_pos) - (c_vga_width-256));			-- right
-	s_upcoming_x_coord <= std_logic_vector(unsigned(s_current_x_coord)+2);
+	s_upcoming_x_coord_int <= i_horz_pos - (c_vga_width-256) + 2; 			-- right
+	s_current_x_coord_int <= s_upcoming_x_coord_int - 2;
+	
+	s_current_x_coord <= std_logic_vector(to_unsigned(s_current_x_coord_int, 10));
+	s_upcoming_x_coord <= std_logic_vector(to_unsigned(s_upcoming_x_coord_int, 10));
 
 	-- Calculate the current and upcoming horizontal character char number (xcoord / 8)
 	s_current_char_column <= s_current_x_coord(9 downto 3);
@@ -126,10 +131,10 @@ begin
 	s_vram_addr_upcoming <= s_current_char_row(3 downto 0) & s_upcoming_char_column(4 downto 0);
 
 	-- The upcoming vram address is the one we need to request now
-	o_video_ram_addr <= s_vram_addr_upcoming;
+	o_vram_addr <= s_vram_addr_upcoming;
 	
 	-- Setup Character Rom lookup address.
-	s_charrom_addr <= i_video_ram_char(6 downto 0) & s_current_ypos_in_char(3 downto 0);
+	s_charrom_addr <= i_vram_char(6 downto 0) & s_current_ypos_in_char(3 downto 0);
 	
 	-- Work out the current s_pixel value
 	s_current_pixel <= s_charrom_dout(to_integer(unsigned(not s_current_xpos_in_char)));
@@ -149,7 +154,7 @@ begin
 	charrom : entity work.SysConCharRom
 	PORT MAP 
 	(
-		i_clock => pixel_clock,
+		i_clock => i_clock,
 		i_addr => s_charrom_addr,
 		o_dout => s_charrom_dout
 	);

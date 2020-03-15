@@ -23,6 +23,8 @@ port
 	o_dout : out std_logic_vector(7 downto 0)
 );
 end SysConCharRom;
+
+--xilt:nowarn:Signal 'ram', unconnected in block 'SysConCharRom', is tied to its initial value.
  
 architecture behavior of SysConCharRom is 
 	type mem_type is array(0 to 2047) of std_logic_vector(7 downto 0);
@@ -158,11 +160,11 @@ x"00", x"00", x"28", x"54", x"28", x"54", x"28", x"54", x"28", x"00", x"00", x"0
 );
 begin
 
-	process (clock)
+	process (i_clock)
 	begin
-		if rising_edge(clock) then
+		if rising_edge(i_clock) then
 
-			dout <= ram(to_integer(unsigned(addr)));
+			o_dout <= ram(to_integer(unsigned(i_addr)));
 
 		end if;
 	end process;

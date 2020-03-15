@@ -58,6 +58,9 @@ void run_fibers();
 // Create a new fiber with given proc and stack size
 FIBER* create_fiber(void (*fiberProc)(), int stack_size);
 
+// Get the currently running fiber
+FIBER* get_current_fiber();
+
 // Signals
 void init_signal(SIGNAL* pSignal);
 void set_signal(SIGNAL* pSignal);
@@ -84,10 +87,12 @@ __sfr __at APM_PAGEBANK_PORT ApmPageBank;
 __sfr __at APM_ENABLE_PORT ApmEnable;
 
 // Bit flags for ApmSysConEnable
-#define APM_ENABLE_VIDEO_RAM  0x01           // 0xFC00 -> 0xFFFF
+#define APM_ENABLE_VIDEOBANK  0x01           // 0xFC00 -> 0xFFFF
 #define APM_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
                                              // (from 0x6000 -> 0x7FFF is writable)
 #define APM_ENABLE_PAGEBANK   0x04           // Enable page banking from 0xFC00 -> 0xFFFF
+#define APM_ENABLE_VIDEOSHOW  0x08           // Enable syscon video display
+#define APM_ENABLE_ALLKEYS    0x10           // Forward all keys to syscon
 #define APM_ENABLE_RESET      0x80           // Write this to ApmEnable to reset the machine
 
 __at(0xFC00) char banked_page[0x400];
@@ -107,6 +112,11 @@ __sfr __at INTERRUPT_CONTROLLER_PORT InterruptControllerPort;
 // to exit hijack mode.  The actual mode switch will happen on the 
 // next RET or JP (HL).
 
+
+#define IRQ_UART_RX     0x01
+#define IRQ_UART_TX     0x02
+#define IRQ_SD_CARD     0x04
+#define IRQ_KEYBOARD    0x08
 
 
 // ------------------------- Serial Port -------------------------
@@ -200,13 +210,205 @@ void sd_write_command(uint32_t blockNumber);
 void sd_write_data(void* ptr);
 void sd_write(uint32_t block_number, void* ptr);
 
+void sd_init_isr();
+void sd_isr();
+
 extern void (*sd_yield)();
 
+
+
+// ------------------------- Video Overlay -------------------------
+
+#define SCREEN_WIDTH		32
+#define SCREEN_HEIGHT		16
+
+// Colors
+#define COLOR_BLACK			0
+#define COLOR_DARKRED		1
+#define COLOR_DARKGREEN		2
+#define COLOR_BROWN			3
+#define COLOR_DARKBLUE		4
+#define COLOR_DARKMAGENTA	5
+#define COLOR_DARKCYAN		6
+#define COLOR_GRAY			7
+#define COLOR_DARKGRAY		8
+#define COLOR_RED			9
+#define COLOR_GREEN			10
+#define COLOR_YELLOW		11
+#define COLOR_BLUE			12
+#define COLOR_MAGENTA		13
+#define COLOR_CYAN			14
+#define COLOR_WHITE			15
+
+#define MAKECOLOR(fg, bg) ((uint8_t)(((bg) << 4) | (fg)))
+
+
+// Character rom is reduced character set.
+// These are the box draw character codes
+#define BOX_TL	((char)6)
+#define BOX_TR	((char)3)
+#define BOX_BL	((char)4)
+#define BOX_BR	((char)5)
+#define BOX_H	((char)1)
+#define BOX_V	((char)2)
+#define CH_CURSOR	((char)20)
+
+
+__at(0xFC00) char video_char_ram[SCREEN_WIDTH * SCREEN_HEIGHT];
+__at(0xFC00 + SCREEN_WIDTH * SCREEN_HEIGHT) char video_color_ram[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+void video_clear();
+void video_write(uint8_t x, uint8_t y, const char* psz, uint8_t length, uint8_t attr);
+void video_write_sz(uint8_t x, uint8_t y, const char* psz, uint8_t attr);
+
+
+// ------------------------- Keyboard -------------------------
+
+#define KEYBOARD_PORT_LO    0x70       // Read only
+#define KEYBOARD_PORT_HI    0x71       // Read only
+
+__sfr __at KEYBOARD_PORT_LO KeyboardPortLo;
+__sfr __at KEYBOARD_PORT_HI KeyboardPortHi;
+
+// KeyboardPortLo(7) = extended key flag
+// KeyboardPortLo(6 downto 0) = scan code
+// KeyboardPortLo == 0 then no key
+
+// KeyboardPortHi(7) = key release flag
+// KeyboardPortHi(6 downto 2) = unused
+// KeyboardPortHi(1) = Ctrl pressed
+// KeyboardPortHi(0) = Shift pressed
+
+// Reading KeyboardPortHi clears the current key
+
+#define KEY_F9 0x01
+#define KEY_F5 0x03
+#define KEY_F3 0x04
+#define KEY_F1 0x05
+#define KEY_F2 0x06
+#define KEY_F12 0x07
+#define KEY_F10 0x09
+#define KEY_F8 0x0A
+#define KEY_F6 0x0B
+#define KEY_F4 0x0C
+#define KEY_TAB 0x0D
+#define KEY_BACKTICK 0x0E
+#define KEY_LMENU 0x11
+#define KEY_RMENU 0x91
+#define KEY_LSHIFT 0x12
+#define KEY_LCTRL 0x14
+#define KEY_RCTRL 0x94
+#define KEY_Q 0x15
+#define KEY_1 0x16
+#define KEY_Z 0x1A
+#define KEY_S 0x1B
+#define KEY_A 0x1C
+#define KEY_W 0x1D
+#define KEY_2 0x1E
+#define KEY_C 0x21
+#define KEY_X 0x22
+#define KEY_D 0x23
+#define KEY_E 0x24
+#define KEY_4 0x25
+#define KEY_3 0x26
+#define KEY_SPACE 0x29
+#define KEY_V 0x2A
+#define KEY_F 0x2B
+#define KEY_T 0x2C
+#define KEY_R 0x2D
+#define KEY_5 0x2E
+#define KEY_N 0x31
+#define KEY_B 0x32
+#define KEY_H 0x33
+#define KEY_G 0x34
+#define KEY_Y 0x35
+#define KEY_6 0x36
+#define KEY_M 0x3A
+#define KEY_J 0x3B
+#define KEY_U 0x3C
+#define KEY_7 0x3D
+#define KEY_8 0x3E
+#define KEY_COMMA 0x41
+#define KEY_K 0x42
+#define KEY_I 0x43
+#define KEY_O 0x44
+#define KEY_0 0x45
+#define KEY_9 0x46
+#define KEY_PERIOD 0x49
+#define KEY_SLASH 0x4A
+#define KEY_DIVIDE 0xCA
+#define KEY_L 0x4B
+#define KEY_SEMICOLON 0x4C
+#define KEY_P 0x4D
+#define KEY_HYPHEN 0x4E
+#define KEY_QUOTE 0x52
+#define KEY_LSQUARE 0x54
+#define KEY_EQUAL 0x55
+#define KEY_CAPITAL 0x58
+#define KEY_RSHIFT 0x59
+#define KEY_ENTER 0x5A
+#define KEY_NUMENTER 0xDA
+#define KEY_RSQUARE 0x5B
+#define KEY_BACKSLASH 0x5D
+#define KEY_BACKSPACE 0x66
+#define KEY_NUM1 0x69
+#define KEY_END 0xE9
+#define KEY_NUM4 0x6B
+#define KEY_LEFT 0xEB
+#define KEY_NUM7 0x6C
+#define KEY_HOME 0xEC
+#define KEY_NUM0 0x70
+#define KEY_INSERT 0xF0
+#define KEY_DECIMAL 0x71
+#define KEY_DELETE 0xF1
+#define KEY_NUM2 0x72
+#define KEY_DOWN 0xF2
+#define KEY_NUM5 0x73
+#define KEY_NUM6 0x74
+#define KEY_RIGHT 0xF4
+#define KEY_NUM8 0x75
+#define KEY_UP 0xF5
+#define KEY_ESCAPE 0x76
+#define KEY_F11 0x78
+#define KEY_ADD 0x79
+#define KEY_NUM3 0x7A
+#define KEY_NEXT 0xFA
+#define KEY_SUBTRACT 0x7B
+#define KEY_MULTIPLY 0x7C
+#define KEY_NUM9 0x7D
+#define KEY_PRIOR 0xFD
+#define KEY_F7 0x83        // NB: Not an extended key code
 
 
 // ------------------------- No-op Yield -------------------------
 
 void yield_nop();
+
+
+
+// ------------------------- Messaging -------------------------
+
+
+#define MESSAGE_NOP			0
+#define MESSAGE_KEYDOWN  	1
+#define MESSAGE_CHAR	 	2
+#define MESSAGE_KEYUP  	    3
+
+
+typedef struct tagMSG
+{
+	uint8_t message;
+	uint8_t param1;
+	uint16_t param2;
+} MSG;
+
+void msg_init();
+void msg_copy(MSG* dest, MSG* src);
+void msg_enqueue(MSG* pMessage);
+void msg_post(uint8_t msg, uint8_t param1, uint16_t param2);
+bool msg_peek(MSG* pMsg, bool remove);
+void msg_get(MSG* pMsg);
+void msg_isr();
 
 
 #endif      // _LIBSYSCON_H

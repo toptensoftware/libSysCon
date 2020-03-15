@@ -41,12 +41,13 @@ architecture Behavioral of SysConSerialPort is
 	signal s_uart_tx_write : std_logic;
 	signal s_uart_tx_din : std_logic_vector(7 downto 0);
 	signal s_uart_tx_count : std_logic_vector(7 downto 0);
-	signal s_uart_tx_empty : std_logic;
-	signal s_uart_tx_was_empty : std_logic;
+	signal s_uart_tx_full : std_logic;
 	signal s_uart_rx_read : std_logic;
 	signal s_uart_rx_dout : std_logic_vector(7 downto 0);
 	signal s_uart_rx_count : std_logic_vector(7 downto 0);
 	signal s_uart_rx_empty : std_logic;
+	signal s_not_uart_rx_empty : std_logic;
+	signal s_not_uart_tx_full : std_logic;
 begin
 
 	o_cpu_din <=
@@ -54,8 +55,37 @@ begin
 		s_uart_rx_count when i_cpu_port_number = "01" else
 		s_uart_rx_dout;
 
-	o_irq_rx <= not s_uart_rx_empty;
-	o_irq_tx <= s_uart_tx_empty;
+	s_not_uart_rx_empty  <= not s_uart_rx_empty;
+	s_not_uart_tx_full <= not s_uart_tx_full;
+
+	e_delayed_rx_irq : entity work.DelayedSignal
+	generic map
+	(
+		p_delay_period => 80_000_000 / 1_000 * 11			-- 11 milliseconds
+	)
+	port map
+	(
+		i_clock => i_clock,
+		i_clken => '1',
+		i_reset => i_reset,
+		i_signal => s_not_uart_rx_empty,
+		o_signal => o_irq_rx
+	);
+
+	e_delayed_tx_irq : entity work.DelayedSignal
+	generic map
+	(
+		p_delay_period => 80_000_000 / 1_000 * 11			-- 11 milliseconds
+	)
+	port map
+	(
+		i_clock => i_clock,
+		i_clken => '1',
+		i_reset => i_reset,
+		i_signal => s_not_uart_tx_full,
+		o_signal => o_irq_tx
+	);
+
 
 	port_handler : process(i_clock)
 	begin
@@ -98,8 +128,8 @@ begin
 		i_din => s_uart_tx_din,
 		o_uart_tx => o_uart_tx,
 		o_busy => open,
-		o_full => open,
-		o_empty => s_uart_tx_empty,
+		o_full => s_uart_tx_full,
+		o_empty => open,
 		o_underflow => open,
 		o_overflow => open,
 		o_count => s_uart_tx_count

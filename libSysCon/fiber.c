@@ -16,6 +16,11 @@ void* g_run_fibers_sp;
 // Forward declarations
 void resume_current_fiber();
 
+FIBER* get_current_fiber()
+{
+	return g_pCurrentFiber;
+}
+
 // Runs all fibers until none are active
 void run_fibers()
 {
