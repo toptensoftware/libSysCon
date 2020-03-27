@@ -74,9 +74,16 @@ void msg_get(MSG* pMsg)
 		if (msg_peek(pMsg, true))
 			return;
 
-        wait_signal(&g_sig_msg);
+        msg_yield();
 	}
 }
+
+// Yield the current fiber until a new message is enqueued
+void msg_yield()
+{
+    wait_signal(&g_sig_msg);
+}
+
 
 // Messaging ISR
 void msg_isr()
@@ -96,8 +103,19 @@ void msg_isr()
             // Read the modifiers etc... (and clear the irq)
             uint8_t hi = KeyboardPortHi;
 
-            // Post a message
+            // Post message
             msg_post((hi & 0x80) ? MESSAGE_KEYUP : MESSAGE_KEYDOWN, lo, hi);
+
+            // Also generate character messages?
+            if ((hi & 0x80) == 0)
+            {
+                char ch = key_to_char(lo, hi);
+                if (ch != 0)
+                {
+                    msg_post(MESSAGE_CHAR, ch, 0);
+                }
+            }
         }
     }
+
 }

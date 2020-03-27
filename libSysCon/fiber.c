@@ -180,15 +180,17 @@ void wait_signal(SIGNAL* pSignal)
 void init_mutex(MUTEX* pMutex)
 {
 	pMutex->pOwningFiber = NULL;
+	pMutex->depth = 0;
 	init_signal(&pMutex->signal);
 }
 
 // Enter mutex
 void enter_mutex(MUTEX* pMutex)
 {
-	if (pMutex->pOwningFiber == NULL)
+	if (pMutex->pOwningFiber == NULL || pMutex->pOwningFiber == g_pCurrentFiber)
 	{
 		pMutex->pOwningFiber = g_pCurrentFiber;
+		pMutex->depth++;
 		return;
 	}
 
@@ -198,9 +200,13 @@ void enter_mutex(MUTEX* pMutex)
 // Leave mutex
 void leave_mutex(MUTEX* pMutex)
 {
-	pMutex->pOwningFiber = NULL;
-	if (pMutex->signal.pWaitingFibers != NULL)
+	pMutex->depth--;
+	if (pMutex->depth == 0)
 	{
-		set_signal(&pMutex->signal);
+		pMutex->pOwningFiber = NULL;
+		if (pMutex->signal.pWaitingFibers != NULL)
+		{
+			set_signal(&pMutex->signal);
+		}
 	}
 }

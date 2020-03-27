@@ -50,6 +50,7 @@ typedef struct _MUTEX
 {
     FIBER* pOwningFiber;
     SIGNAL signal;
+	uint8_t depth;
 } MUTEX;
 
 // Run all active fibers
@@ -96,6 +97,21 @@ __sfr __at APM_ENABLE_PORT ApmEnable;
 #define APM_ENABLE_RESET      0x80           // Write this to ApmEnable to reset the machine
 
 __at(0xFC00) char banked_page[0x400];
+
+
+
+// ------------------------- Options Port -------------------------
+
+#define OPTIONS_PORT 0x00
+
+__sfr __at OPTIONS_PORT OptionsPort;
+
+#define OPTION_TURBO_TAPE 0x01
+#define OPTION_TYPING_MODE 0x02
+#define OPTION_GREEN_SCREEN 0x04
+#define OPTION_NO_SCAN_LINES 0x08
+#define OPTION_CAS_AUDIO 0x10
+#define OPTION_AUTO_CAS 0x20
 
 
 
@@ -216,6 +232,23 @@ void sd_isr();
 extern void (*sd_yield)();
 
 
+// ------------------------- Geometry -------------------------
+
+typedef struct tagRECT
+{
+	uint8_t left;
+	uint8_t top;
+	uint8_t width;
+	uint8_t height;
+} RECT;
+
+typedef struct tagPOINT
+{
+	uint8_t x;
+	uint8_t y;
+} POINT;
+
+
 
 // ------------------------- Video Overlay -------------------------
 
@@ -253,13 +286,34 @@ extern void (*sd_yield)();
 #define BOX_V	((char)2)
 #define CH_CURSOR	((char)20)
 
+// Flags for video_draw_text
+#define DT_LEFT			0
+#define DT_RIGHT 		1
+#define DT_CENTER 		2
+#define DT_ALIGNMASK 	0x03
+#define DT_NOFILL 		0x80		// Otherwise fill unused area with spaces
 
-__at(0xFC00) char video_char_ram[SCREEN_WIDTH * SCREEN_HEIGHT];
-__at(0xFC00 + SCREEN_WIDTH * SCREEN_HEIGHT) char video_color_ram[SCREEN_WIDTH * SCREEN_HEIGHT];
+__at(0xFC00) char video_char_ram_hw[SCREEN_WIDTH * SCREEN_HEIGHT];
+__at(0xFC00 + SCREEN_WIDTH * SCREEN_HEIGHT) char video_color_ram_hw[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+extern char* video_char_ram;
+extern char* video_color_ram;
 
 void video_clear();
 void video_write(uint8_t x, uint8_t y, const char* psz, uint8_t length, uint8_t attr);
 void video_write_sz(uint8_t x, uint8_t y, const char* psz, uint8_t attr);
+void video_set_color(uint8_t left, uint8_t top, uint8_t width, uint8_t height, uint8_t attr);
+void video_draw_box_indirect(RECT* prc, uint8_t attr);
+void video_draw_box(uint8_t left, uint8_t top, uint8_t width, uint8_t height, uint8_t attr);
+void video_text_out(uint8_t x, uint8_t y, const char* psz);
+void video_draw_text(uint8_t x, uint8_t y, uint8_t width, const char* psz, uint8_t flags);
+void video_measure_multiline_text(const char* psz, POINT* pVal);
+void video_draw_multiline_text(const char* psz, POINT* pPos);
+void video_scroll(uint8_t left, uint8_t top, uint8_t width, uint8_t height, int dy, bool attr, uint8_t* pRedrawFrom, uint8_t* pRedrawCount);
+void video_begin_offscreen();
+void video_end_offscreen();
+void* video_save(uint8_t left, uint8_t top, uint8_t width, uint8_t height);
+void video_restore(void* saveData);
 
 
 // ------------------------- Keyboard -------------------------
@@ -280,6 +334,9 @@ __sfr __at KEYBOARD_PORT_HI KeyboardPortHi;
 // KeyboardPortHi(0) = Shift pressed
 
 // Reading KeyboardPortHi clears the current key
+
+char key_to_char(uint8_t lo, uint8_t hi);
+
 
 #define KEY_F9 0x01
 #define KEY_F5 0x03
@@ -343,7 +400,7 @@ __sfr __at KEYBOARD_PORT_HI KeyboardPortHi;
 #define KEY_HYPHEN 0x4E
 #define KEY_QUOTE 0x52
 #define KEY_LSQUARE 0x54
-#define KEY_EQUAL 0x55
+#define KEY_EQUALS 0x55
 #define KEY_CAPITAL 0x58
 #define KEY_RSHIFT 0x59
 #define KEY_ENTER 0x5A
@@ -393,7 +450,8 @@ void yield_nop();
 #define MESSAGE_KEYDOWN  	1
 #define MESSAGE_CHAR	 	2
 #define MESSAGE_KEYUP  	    3
-
+#define MESSAGE_DRAWFRAME	4
+#define MESSAGE_DRAWCONTENT	5
 
 typedef struct tagMSG
 {
@@ -408,7 +466,112 @@ void msg_enqueue(MSG* pMessage);
 void msg_post(uint8_t msg, uint8_t param1, uint16_t param2);
 bool msg_peek(MSG* pMsg, bool remove);
 void msg_get(MSG* pMsg);
+void msg_yield();
 void msg_isr();
+
+
+
+// ------------------------- Windowing -------------------------
+
+typedef struct tagWINDOW
+{
+// public:
+	RECT rcFrame;
+	uint8_t attrNormal;
+	uint8_t attrSelected;
+	void* user;
+	const char* title;
+	size_t (*wndProc)(struct tagWINDOW* pWindow, MSG* pMessage);
+
+// private/readonly:
+	struct tagWINDOW* parent;
+	void* screenSave;
+	bool running;
+	bool modal;
+	int retv;
+	bool needsDraw;
+} WINDOW;
+
+
+size_t window_send_message(WINDOW* pWindow, uint8_t message, uint8_t param1, uint16_t param2);
+void window_get_client_rect(WINDOW* pWindow, RECT* prc);
+extern size_t (*window_msg_hook)(WINDOW* pWindow, MSG* pMessage, bool* pbHandled);
+size_t window_def_proc(WINDOW* pWindow, MSG* pMsg);
+WINDOW* window_get_active();
+void window_create(WINDOW* pWindow);
+void window_destroy();
+void window_run_modeless(WINDOW* pWindow);
+bool window_update_modeless(WINDOW* pWindow);
+int window_end_modeless(WINDOW* pWindow);
+int window_run_modal(WINDOW* pWindow);
+void window_end_modal(int retv);
+uint8_t window_get_attr_normal(WINDOW* pWindow);
+uint8_t window_get_attr_selected(WINDOW* pWindow);
+void window_invalidate(WINDOW* pWindow);
+
+
+
+// ------------------------- Windowing -------------------------
+
+#define MB_INPROGRESS	0x40	// Green display
+#define MB_ERROR		0x80	// Red display
+
+typedef struct tagMESSAGEBOX
+{
+	WINDOW window;
+	const char* pszMessage;
+	const char** ppszButtons;
+	uint8_t flags;
+	uint8_t selectedButton;
+} MESSAGEBOX;
+
+// Setup to display a modeless message box
+void message_box_modeless(MESSAGEBOX* pMessageBox, const char* pszTitle, const char* pszMessage, const char** ppszButtons, uint8_t flags);
+
+// Returns 0 if last button pressed
+// Otherwise 1 based button index
+int message_box(const char* pszTitle, const char* pszMessage, const char** ppszButtons, uint8_t flags);
+
+
+
+// ------------------------- Prompt Input -------------------------
+
+bool prompt_input(const char* pszTitle, char* buf, int cbBuf);
+
+
+
+// ------------------------- List Box -------------------------
+
+typedef struct tagLISTBOX
+{
+// Window
+	WINDOW window;
+
+// Public
+	int selectedItem;
+
+// Pull Data source
+	int (*getItemCount)(struct tagLISTBOX* pListBox);
+	const char* (*getItemText)(struct tagLISTBOX* pListBox, int item);
+
+// Push data source
+	int itemCount;
+	const char** ppItems;
+
+// Internal
+	uint8_t	state;
+	int scrollPos;
+} LISTBOX;
+
+size_t listbox_wndproc(WINDOW* pWindow, MSG* pMsg);
+void listbox_draw(LISTBOX* pListBox);
+void listbox_drawitem(LISTBOX* pListBox, int item);
+bool listbox_message(LISTBOX* pListBox, MSG* pMsg);
+int listbox_ensure_visible(LISTBOX* pListBox, int item);
+bool listbox_select(LISTBOX* pListBox, int item);
+void listbox_set_data(LISTBOX* pListBox, int itemCount, const char** ppItems);
+
+int listbox_modal(LISTBOX* pListBox);
 
 
 #endif      // _LIBSYSCON_H
