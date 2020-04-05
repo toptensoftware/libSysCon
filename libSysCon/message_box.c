@@ -2,13 +2,14 @@
 #include <string.h>
 
 const char* okButtons[] = { "OK", NULL };
+/*
 const char* okCancelButtons[] = { "OK", "Cancel", NULL };
 const char* yesNoButtons[] = { "Yes", "No", NULL };
 const char* stopButtons[] = { "Stop", NULL };
 const char* cancelButtons[] = { "Cancel", NULL };
 const char* stopCancelButtons[] = { "Cancel", NULL };
 const char** buttonTexts[] = { okButtons, okCancelButtons, yesNoButtons, stopButtons, cancelButtons, stopCancelButtons };
-
+*/
 
 int button_width(const char** ppsz)
 {

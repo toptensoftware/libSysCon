@@ -33,7 +33,6 @@ static void listbox_draw_highlight(LISTBOX* pListBox)
 	RECT rcClient;
 	window_get_client_rect(&pListBox->window, &rcClient);
 
-
 	if (highlightedRow >= 0 && highlightedRow < rcClient.height)
 	{
 		video_set_color(rcClient.left, highlightedRow + rcClient.top, rcClient.width, 1, window_get_attr_selected(&pListBox->window));
@@ -60,7 +59,7 @@ void listbox_drawitem(LISTBOX* pListBox, int item)
 }
 
 // Moves the selection and scroll position
-static bool listbox_update(LISTBOX* pListBox, int newSelectedItem, int newScrollPos)
+bool listbox_update(LISTBOX* pListBox, int newSelectedItem, int newScrollPos)
 {
 	// Remember which row was highlighted
 	int oldHighlightedRow, newHighlightedRow;

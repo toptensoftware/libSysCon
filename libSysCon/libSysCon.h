@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// ------------------------- Misc -------------------------
+
+char tolower(char ch);
+int stricmp(const char* p1, const char* p2);
+const char* stralloc(const char* psz);
+
 
 
 // ------------------------- Linked Lists -------------------------
@@ -525,6 +531,9 @@ typedef struct tagMESSAGEBOX
 	uint8_t selectedButton;
 } MESSAGEBOX;
 
+extern const char* okButtons[];
+
+
 // Setup to display a modeless message box
 void message_box_modeless(MESSAGEBOX* pMessageBox, const char* pszTitle, const char* pszMessage, const char** ppszButtons, uint8_t flags);
 
@@ -566,12 +575,19 @@ typedef struct tagLISTBOX
 size_t listbox_wndproc(WINDOW* pWindow, MSG* pMsg);
 void listbox_draw(LISTBOX* pListBox);
 void listbox_drawitem(LISTBOX* pListBox, int item);
+bool listbox_update(LISTBOX* pListBox, int newSelectedItem, int newScrollPos);
 bool listbox_message(LISTBOX* pListBox, MSG* pMsg);
 int listbox_ensure_visible(LISTBOX* pListBox, int item);
 bool listbox_select(LISTBOX* pListBox, int item);
 void listbox_set_data(LISTBOX* pListBox, int itemCount, const char** ppItems);
 
 int listbox_modal(LISTBOX* pListBox);
+
+
+
+// ------------------------- List Box -------------------------
+
+const char* choose_file(const char* pattern, const char* selectedFile, const char* pszNullOption);
 
 
 #endif      // _LIBSYSCON_H
