@@ -23,6 +23,45 @@
 #include "ffpriv.h"		/* Private declarations */
 
 
+FRESULT f_current_sector(FIL* fp, LBA_t* psector)
+{
+	FRESULT res;
+	FATFS* fs;
+	DWORD clst;
+	LBA_t sect;
+	UINT csect;
+
+	res = validate(&fp->obj, &fs);				/* Check validity of the file object */
+	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) LEAVE_FF(fs, res);	/* Check validity */
+
+	csect = (UINT)(fp->fptr / SS(fs) & (fs->csize - 1));	/* Sector offset in the cluster */
+	if (csect == 0) {					/* On the cluster boundary? */
+		if (fp->fptr == 0) {			/* On the top of the file? */
+			clst = fp->obj.sclust;		/* Follow cluster chain from the origin */
+		}
+		else {						/* Middle or end of the file */
+#if FF_USE_FASTSEEK
+			if (fp->cltbl) {
+				clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+			}
+			else
+#endif
+			{
+				clst = get_fat(&fp->obj, fp->clust);	/* Follow cluster chain on the FAT */
+			}
+		}
+		if (clst < 2) ABORT(fs, FR_INT_ERR);
+		if (clst == 0xFFFFFFFF) ABORT(fs, FR_DISK_ERR);
+		//fp->clust = clst;				/* Update current cluster */
+	}
+	else
+		clst = fp->clust;
+	sect = clst2sect(fs, clst);	/* Get current sector */
+	if (sect == 0) ABORT(fs, FR_INT_ERR);
+	sect += csect;
+	*psector = sect;
+	LEAVE_FF(fs, FR_OK);
+}
 
 
 /*-----------------------------------------------------------------------*/

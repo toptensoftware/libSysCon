@@ -24,6 +24,61 @@
 
 #if !FF_FS_READONLY
 
+FRESULT f_create_sector(FIL* fp, LBA_t* psector)
+{
+	FRESULT res;
+	FATFS* fs;
+	DWORD clst;
+	LBA_t sect;
+	UINT csect;
+
+	res = validate(&fp->obj, &fs);			/* Check validity of the file object */
+	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) LEAVE_FF(fs, res);	/* Check validity */
+	if (!(fp->flag & FA_WRITE)) LEAVE_FF(fs, FR_DENIED);	/* Check access mode */
+
+	csect = (UINT)(fp->fptr / SS(fs)) & (fs->csize - 1);	/* Sector offset in the cluster */
+	if (csect == 0) {				/* On the cluster boundary? */
+		if (fp->fptr == 0) {		/* On the top of the file? */
+			clst = fp->obj.sclust;	/* Follow from the origin */
+			if (clst == 0) {		/* If no cluster is allocated, */
+				clst = create_chain(&fp->obj, 0);	/* create a new cluster chain */
+			}
+		}
+		else {					/* On the middle or end of the file */
+#if FF_USE_FASTSEEK
+			if (fp->cltbl) {
+				clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+			}
+			else
+#endif
+			{
+				clst = create_chain(&fp->obj, fp->clust);	/* Follow or stretch cluster chain on the FAT */
+			}
+		}
+		if (clst == 0) ABORT(fs, FR_DISK_ERR);		/* Could not allocate a new cluster (disk full) */
+		if (clst == 1) ABORT(fs, FR_INT_ERR);
+		if (clst == 0xFFFFFFFF) ABORT(fs, FR_DISK_ERR);
+		//fp->clust = clst;			/* Update current cluster */
+		if (fp->obj.sclust == 0) fp->obj.sclust = clst;	/* Set start cluster if the first write */
+	}
+	else
+		clst = fp->clust;
+#if FF_FS_TINY
+	if (fs->winsect == fp->sect && sync_window(fs) != FR_OK) ABORT(fs, FR_DISK_ERR);	/* Write-back sector cache */
+#else
+	if (fp->flag & FA_DIRTY) {		/* Write-back sector cache */
+		if (disk_write(fs->pdrv, fp->buf, fp->sect, 1) != RES_OK) ABORT(fs, FR_DISK_ERR);
+		fp->flag &= (BYTE)~FA_DIRTY;
+	}
+#endif
+	sect = clst2sect(fs, clst);	/* Get current sector */
+	if (sect == 0) ABORT(fs, FR_INT_ERR);
+	sect += csect;
+	*psector = sect;
+	LEAVE_FF(fs, FR_OK);
+}
+
+
 /*-----------------------------------------------------------------------*/
 /* Write File                                                            */
 /*-----------------------------------------------------------------------*/

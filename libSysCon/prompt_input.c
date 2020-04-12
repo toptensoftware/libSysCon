@@ -1,13 +1,16 @@
 #include "libSysCon.h"
 #include <string.h>
+#include <stdio.h>
 
 typedef struct tagPROMPTINPUT
 {
 	WINDOW window;
 	int cursorPos;
-	char workBuf[64];
+	char* workBuf;
 	int cbBuf;
 } PROMPTINPUT;
+
+extern char g_szTemp[];
 
 size_t prompt_input_wndproc(WINDOW* pWindow, MSG* pMsg)
 {
@@ -17,6 +20,8 @@ size_t prompt_input_wndproc(WINDOW* pWindow, MSG* pMsg)
 	{
 		case MESSAGE_DRAWCONTENT:
 		{
+			uint8_t save = ApmEnable;
+			ApmEnable |= APM_ENABLE_VIDEOBANK;
 			RECT rcClient;
 			char* pszScreenBuf;
 			window_get_client_rect(pWindow, &rcClient);
@@ -27,11 +32,12 @@ size_t prompt_input_wndproc(WINDOW* pWindow, MSG* pMsg)
 				memset(pszScreenBuf + p->cursorPos, ' ', rcClient.width - p->cursorPos);
 			}
 			pszScreenBuf[p->cursorPos] = CH_CURSOR;
+			ApmEnable = save;
 			break;
 		}
 
 		case MESSAGE_CHAR:
-			if (p->cursorPos < p->cbBuf)
+			if (p->cursorPos < p->cbBuf && pMsg->param1 >= 32)
 			{
 				p->workBuf[p->cursorPos] = (char)pMsg->param1;
 				p->cursorPos++;
@@ -68,34 +74,45 @@ size_t prompt_input_wndproc(WINDOW* pWindow, MSG* pMsg)
 	return window_def_proc(pWindow, pMsg);
 }
 
-bool prompt_input(const char* pszTitle, char* buf, int cbBuf)
+const char* prompt_input(const char* pszTitle, const char* buf)
 {
 	// Setup window
 	PROMPTINPUT prompt;
 	memset(&prompt, 0, sizeof(prompt));
 	prompt.window.rcFrame.left = 0;
-	prompt.window.rcFrame.top = SCREEN_HEIGHT - 3;
+	prompt.window.rcFrame.top = 8;
 	prompt.window.rcFrame.width = SCREEN_WIDTH;
 	prompt.window.rcFrame.height = 3;
 	prompt.window.attrNormal = MAKECOLOR(COLOR_WHITE, COLOR_BLUE);
 	prompt.window.attrSelected = MAKECOLOR(COLOR_BLACK, COLOR_YELLOW);
 	prompt.window.title = pszTitle;
 	prompt.window.wndProc = prompt_input_wndproc;
+	prompt.cbBuf = 64;
+	prompt.workBuf = malloc(prompt.cbBuf);
 
 	// Setup prompt
-	prompt.cursorPos = strlen(buf);
-	if (prompt.cursorPos)
-		memcpy(prompt.workBuf, buf, prompt.cursorPos);
-	prompt.cbBuf = cbBuf;
+	if (buf)
+	{
+		prompt.cursorPos = strlen(buf);
+		if (prompt.cursorPos)
+			memcpy(prompt.workBuf, buf, prompt.cursorPos);
+	}
+	else
+	{
+		prompt.cursorPos = 0;
+	}
 
 	// Run it...
 	if (!window_run_modal(&prompt.window))
-		return false;
+	{
+		free(prompt.workBuf);
+		return NULL;
+	}
 
 	// Return entered text to caller
-	if (prompt.cursorPos)
-		memcpy(buf, prompt.workBuf, prompt.cursorPos);
-	buf[prompt.cursorPos] = '\0';
-	return true;
+	prompt.workBuf[prompt.cursorPos] = '\0';
+	const char* pszRet = stralloc(prompt.workBuf);
+	free(prompt.workBuf);
+	return pszRet;
 }
 	

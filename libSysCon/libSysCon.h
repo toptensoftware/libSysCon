@@ -139,6 +139,7 @@ __sfr __at INTERRUPT_CONTROLLER_PORT InterruptControllerPort;
 #define IRQ_UART_TX     0x02
 #define IRQ_SD_CARD     0x04
 #define IRQ_KEYBOARD    0x08
+#define IRQ_CASSETTE	0x10
 
 
 // ------------------------- Serial Port -------------------------
@@ -449,6 +450,32 @@ void yield_nop();
 
 
 
+// ------------------------- Cassette Controller -------------------------
+
+// Address page mapping ports
+#define CASSETTE_CMDSTATUS_PORT     0xC0
+#define CASSETTE_DATA_PORT			0xC1
+
+// Read status / write command
+__sfr __at CASSETTE_CMDSTATUS_PORT CassetteCmdStatusPort;
+
+// Send block number 1 byte at a time, LSB first
+__sfr __at CASSETTE_DATA_PORT CassetteDataPort;
+
+// Cassette Commands
+#define CASSETTE_COMMAND_PLAY		0x01
+#define CASSETTE_COMMAND_RECORD		0x02
+#define CASSETTE_COMMAND_STOP		0x04
+#define CASSETTE_COMMAND_LOAD_BLOCK	0x08
+
+// Cassette Status
+#define CASSETTE_STATUS_PLAYING 	0x01
+#define CASSETTE_STATUS_RECORDING 	0x02
+#define CASSETTE_STATUS_NEED_BLOCK	0x04
+
+
+// IRQ_CASSETTE raised anytime cassette controller status changes
+
 // ------------------------- Messaging -------------------------
 
 
@@ -545,8 +572,7 @@ int message_box(const char* pszTitle, const char* pszMessage, const char** ppszB
 
 // ------------------------- Prompt Input -------------------------
 
-bool prompt_input(const char* pszTitle, char* buf, int cbBuf);
-
+const char* prompt_input(const char* pszTitle, const char* buf);
 
 
 // ------------------------- List Box -------------------------
