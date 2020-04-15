@@ -18,6 +18,7 @@ YAZD ?= yazd
 PROJNAME ?= $(notdir $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST)))))
 
 BINFILE ?= $(PROJNAME).bin
+IMPLIB ?= $(PROJNAME).lib
 
 CSOURCES  ?= $(wildcard *.c)
 ASMSOURCES  ?= $(wildcard *.s)
@@ -27,6 +28,7 @@ COMMONFLAGS ?= -mz80 --stack-auto
 CFLAGS ?= --std-c99 --disable-warning 85 --disable-warning 110 --disable-warning 126
 ASMFLAGS ?= 
 YAZDFLAGS ?= --entry:0
+HEX2BINFLAGS ?= -s 0000
 
 INTDIR ?= ./build
 OUTDIR ?= $(INTDIR)
@@ -66,10 +68,30 @@ $(OUTDIR)/$(BINFILE): $(ASMOBJS) $(COBJS) $(LIBS)
 	@echo Linking $(notdir $@)...
 	@mkdir -p $(OUTDIR)
 	@$(SDCC) $(LINKFLAGS) $^ -o $(INTDIR)/$(PROJNAME).ihx
-	@$(HEX2BIN) -b -s 0000 -e bin.tmp $(INTDIR)/$(PROJNAME).ihx
+	@$(HEX2BIN) -b $(HEX2BINFLAGS) -e bin.tmp $(INTDIR)/$(PROJNAME).ihx
 	@mv $(INTDIR)/$(PROJNAME).bin.tmp $(OUTDIR)/$(BINFILE)
 
 
+
+# ------------------------- Build a Library -------------------------
+
+.PHONY : implib
+
+implib: $(OUTDIR)/$(BINFILE).lib
+
+# Build lib
+$(OUTDIR)/$(BINFILE).lib: implib.s
+	@echo Creating import library $(notdir $@)...
+	@mkdir -p $(OUTDIR)
+	@rm -f $@
+	@$(SDASZ80) $(ASMFLAGS) -l -o $(INTDIR)/implib.rel $<
+	@$(SDAR) -rc $@ $(INTDIR)/implib.rel
+
+
+.PHONY : done
+
+done:
+	@echo "Finished!"
 
 # ------------------------- Build Dependencies -------------------------
 

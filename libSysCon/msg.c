@@ -9,7 +9,7 @@ static uint8_t g_eventBufferReadPos = 0;
 static SIGNAL g_sig_msg;
 
 // Initialize the messaging sub-system
-void msg_init()
+void msg_init_isr()
 {
     init_signal(&g_sig_msg);
 }

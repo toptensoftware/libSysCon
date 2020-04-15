@@ -115,7 +115,12 @@ void window_run_modeless(WINDOW* pWindow)
 	pWindow->running = true;
 }
 
-size_t (*window_msg_hook)(WINDOW* pWindow, MSG* pMessage, bool* pbHandled) = NULL;
+PFNWINDOWHOOK window_msg_hook = NULL;
+
+void window_set_hook(PFNWINDOWHOOK pfn)
+{
+	window_msg_hook = pfn;
+}
 
 bool window_update_modeless(WINDOW* pWindow)
 {

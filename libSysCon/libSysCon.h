@@ -5,6 +5,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
+#ifndef countof
+#define countof(x) (sizeof(x) / sizeof(x[0]))
+#endif
+
 // ------------------------- Misc -------------------------
 
 char tolower(char ch);
@@ -83,12 +88,17 @@ void leave_mutex(MUTEX* pMutex);
 // ------------------------- Address Page Mapping -------------------------
 
 // Address page mapping ports
-#define APM_PAGEBANK_PORT     0xA1
-#define APM_ENABLE_PORT       0xA2
+#define APM_PAGEBANK_1K_PORT     	0xA1
+#define APM_ENABLE_PORT       	0xA2
+#define APM_PAGEBANK_32K_PORT	0xA3
 
 // Sets the upper bits that addresses 0xFC00 -> 0xFFFF map to
 // Actual ram address will be (ApmPageBank << 10) | address (& 0x3ff)
-__sfr __at APM_PAGEBANK_PORT ApmPageBank;
+__sfr __at APM_PAGEBANK_1K_PORT ApmPageBank1k;
+
+// Sets the upper bits that addresses 0xFC00 -> 0xFFFF map to
+// Actual ram address will be (ApmPageBank << 10) | address (& 0x3ff)
+__sfr __at APM_PAGEBANK_32K_PORT ApmPageBank32k;
 
 // Enables/disables other entries in the memory map (see SYSCON_ENABLE_* flags)
 __sfr __at APM_ENABLE_PORT ApmEnable;
@@ -97,7 +107,8 @@ __sfr __at APM_ENABLE_PORT ApmEnable;
 #define APM_ENABLE_VIDEOBANK  0x01           // 0xFC00 -> 0xFFFF
 #define APM_ENABLE_BOOTROM    0x02           // Enable boot rom at 0x0000 -> 0x7FFF
                                              // (from 0x6000 -> 0x7FFF is writable)
-#define APM_ENABLE_PAGEBANK   0x04           // Enable page banking from 0xFC00 -> 0xFFFF
+#define APM_ENABLE_PAGEBANK_1K 0x04           // Enable page banking from 0xFC00 -> 0xFFFF
+										     // (ApmPageBank provides MSB 8-bits for external RAM)
 #define APM_ENABLE_VIDEOSHOW  0x08           // Enable syscon video display
 #define APM_ENABLE_ALLKEYS    0x10           // Forward all keys to syscon
 #define APM_ENABLE_RESET      0x80           // Write this to ApmEnable to reset the machine
@@ -493,14 +504,14 @@ typedef struct tagMSG
 	uint16_t param2;
 } MSG;
 
-void msg_init();
+void msg_init_isr();
+void msg_isr();
 void msg_copy(MSG* dest, MSG* src);
 void msg_enqueue(MSG* pMessage);
 void msg_post(uint8_t msg, uint8_t param1, uint16_t param2);
 bool msg_peek(MSG* pMsg, bool remove);
 void msg_get(MSG* pMsg);
 void msg_yield();
-void msg_isr();
 
 
 
@@ -525,6 +536,7 @@ typedef struct tagWINDOW
 	bool needsDraw;
 } WINDOW;
 
+typedef size_t (*PFNWINDOWHOOK)(WINDOW* pWindow, MSG* pMessage, bool* pbHandled);
 
 size_t window_send_message(WINDOW* pWindow, uint8_t message, uint8_t param1, uint16_t param2);
 void window_get_client_rect(WINDOW* pWindow, RECT* prc);
@@ -541,13 +553,19 @@ void window_end_modal(int retv);
 uint8_t window_get_attr_normal(WINDOW* pWindow);
 uint8_t window_get_attr_selected(WINDOW* pWindow);
 void window_invalidate(WINDOW* pWindow);
+void window_set_hook(PFNWINDOWHOOK pfn);
 
 
 
-// ------------------------- Windowing -------------------------
+// ------------------------- MessageBox -------------------------
 
-#define MB_INPROGRESS	0x40	// Green display
-#define MB_ERROR		0x80	// Red display
+// Buttons
+#define MBB_OK ((const char**)0)
+#define MBB_OKCANCEL (const char**)1)
+
+// Flags
+#define MBF_INPROGRESS	0x40	// Green display
+#define MBF_ERROR		0x80	// Red display
 
 typedef struct tagMESSAGEBOX
 {
@@ -563,6 +581,7 @@ extern const char* okButtons[];
 
 // Setup to display a modeless message box
 void message_box_modeless(MESSAGEBOX* pMessageBox, const char* pszTitle, const char* pszMessage, const char** ppszButtons, uint8_t flags);
+
 
 // Returns 0 if last button pressed
 // Otherwise 1 based button index
@@ -611,9 +630,11 @@ int listbox_modal(LISTBOX* pListBox);
 
 
 
-// ------------------------- List Box -------------------------
+// ------------------------- Choose File -------------------------
 
 const char* choose_file(const char* pattern, const char* selectedFile, const char* pszNullOption);
 
 
 #endif      // _LIBSYSCON_H
+
+

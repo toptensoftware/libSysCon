@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../libSysCon"
+		},
+		{
+			"path": "../Kernel.FatFS"
+		},
+		{
+			"path": "../libFatFS"
+		},
+	],
+	"settings": {}
+}

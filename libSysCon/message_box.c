@@ -2,13 +2,13 @@
 #include <string.h>
 
 const char* okButtons[] = { "OK", NULL };
-/*
 const char* okCancelButtons[] = { "OK", "Cancel", NULL };
+const char** buttonTexts[] = { okButtons, okCancelButtons };
+/*
 const char* yesNoButtons[] = { "Yes", "No", NULL };
 const char* stopButtons[] = { "Stop", NULL };
 const char* cancelButtons[] = { "Cancel", NULL };
 const char* stopCancelButtons[] = { "Cancel", NULL };
-const char** buttonTexts[] = { okButtons, okCancelButtons, yesNoButtons, stopButtons, cancelButtons, stopCancelButtons };
 */
 
 int button_width(const char** ppsz)
@@ -109,8 +109,8 @@ void message_box_modeless(MESSAGEBOX* pMessageBox, const char* pszTitle, const c
 {
 	POINT textSize;
 	int temp;
-	bool error = (flags & MB_ERROR)!=0;
-	bool progress = (flags & MB_INPROGRESS)!=0;
+	bool error = (flags & MBF_ERROR)!=0;
+	bool progress = (flags & MBF_INPROGRESS)!=0;
 
 	// Measure text
 	video_measure_multiline_text(pszMessage, &textSize);
@@ -145,6 +145,11 @@ void message_box_modeless(MESSAGEBOX* pMessageBox, const char* pszTitle, const c
 
 int message_box(const char* pszTitle, const char* pszMessage, const char** ppszButtons, uint8_t flags)
 {
+	if (((uint16_t)ppszButtons) < countof(buttonTexts))
+	{
+		ppszButtons = buttonTexts[((uint16_t)ppszButtons) - 1];
+	}
+
 	// Setup
 	MESSAGEBOX mb;
 	message_box_modeless(&mb, pszTitle, pszMessage, ppszButtons, flags);
