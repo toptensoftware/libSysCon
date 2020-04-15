@@ -45,6 +45,8 @@ ASMOBJS := $(ASMSOURCES:%.s=$(INTDIR)/%.rel)
 
 # ------------------------- Clean  -------------------------
 
+.PHONY: clean
+
 # Optional files/folders to remove
 CLEAN ?= 
 
@@ -54,6 +56,14 @@ clean:
 	@rm -f $(OUTDIR)/$(PROJNAME).lib
 	@rm -f $(OUTDIR)/$(BINFILE)
 	@for p in $(CLEAN); do rm -rf $$p; done
+
+
+# ------------------------- Clean All  -------------------------
+
+.PHONY: cleanall
+
+# Clean target
+cleanall: clean cleandeps
 
 
 
@@ -68,7 +78,7 @@ $(OUTDIR)/$(BINFILE): $(ASMOBJS) $(COBJS) $(LIBS)
 	@echo Linking $(notdir $@)...
 	@mkdir -p $(OUTDIR)
 	@$(SDCC) $(LINKFLAGS) $^ -o $(INTDIR)/$(PROJNAME).ihx
-	@$(HEX2BIN) -b $(HEX2BINFLAGS) -e bin.tmp $(INTDIR)/$(PROJNAME).ihx
+	@$(HEX2BIN) -b $(HEX2BINFLAGS) -e bin.tmp $(INTDIR)/$(PROJNAME).ihx > /dev/null
 	@mv $(INTDIR)/$(PROJNAME).bin.tmp $(OUTDIR)/$(BINFILE)
 
 
@@ -88,17 +98,22 @@ $(OUTDIR)/$(BINFILE).lib: implib.s
 	@$(SDAR) -rc $@ $(INTDIR)/implib.rel
 
 
-.PHONY : done
-
-done:
-	@echo "Finished!"
-
 # ------------------------- Build Dependencies -------------------------
 
 .PHONY: makedeps
 
 makedeps:
-	@for p in $(MAKEDEPS); do echo Making $$p; $(MAKE) --no-print-directory -C $$p; echo ; done
+	@for p in $(MAKEDEPS); do $(MAKE) --no-print-directory -C $$p; done
+
+
+
+
+# ------------------------- Build Dependencies -------------------------
+
+.PHONY: cleandeps
+
+cleandeps:
+	@for p in $(MAKEDEPS); do $(MAKE) --no-print-directory -C $$p cleanall ; done
 
 
 

@@ -20,11 +20,14 @@ OBJS  	 := $(SOURCES:%.c=$(INTDIR)/%.rel)
 
 # Default
 all: $(OUTDIR)/$(PROJNAME).lib
+	@echo > /dev/null
 
 # Clean
 clean:
 	@rm -rf $(INTDIR)
 	@rm -rf $(OUTDIR)/$(PROJNAME).lib
+
+cleanall: clean
 
 # Rebuild
 rebuild: clean all
